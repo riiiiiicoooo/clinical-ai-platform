@@ -1,0 +1,28 @@
+# Clinical AI Platform — Python Dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.0
+pydantic-settings==2.1.0
+httpx==0.26.0
+
+# LLM Providers
+anthropic==0.42.0
+langsmith==0.1.0
+
+# Medical NLP
+scispacy==0.5.3
+medcat==1.12.0
+spacy==3.7.0
+
+# Database
+asyncpg==0.29.0
+redis[hiredis]==5.0.0
+pgvector==0.2.4
+
+# Encryption & Security
+cryptography==42.0.0
+python-jose[cryptography]==3.3.0
+
+# Utilities
+python-multipart==0.0.6
+websockets==12.0

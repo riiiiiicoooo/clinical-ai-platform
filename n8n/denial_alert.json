@@ -1,0 +1,60 @@
+{
+  "name": "Denial Spike Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "hours", "hoursInterval": 1}]
+        }
+      },
+      "name": "Hourly Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://api:8000/api/v1/analytics/denial-rate?period=24h",
+        "method": "GET"
+      },
+      "name": "Get Denial Rate",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.denial_rate }}",
+              "operation": "largerThan",
+              "value2": 15
+            }
+          ]
+        }
+      },
+      "name": "Rate > 15%?",
+      "type": "n8n-nodes-base.if",
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#revenue-cycle",
+        "text": "Denial Rate Alert: {{ $json.denial_rate }}% in last 24h (threshold: 15%)\n\nTop denial reasons:\n{{ $json.top_reasons.map(r => `  ${r.reason}: ${r.count} claims`).join('\\n') }}\n\nAction: Review recent submissions for systematic issues."
+      },
+      "name": "Alert Revenue Cycle",
+      "type": "n8n-nodes-base.slack",
+      "position": [1000, 200]
+    }
+  ],
+  "connections": {
+    "Hourly Check": {
+      "main": [[{"node": "Get Denial Rate", "type": "main", "index": 0}]]
+    },
+    "Get Denial Rate": {
+      "main": [[{"node": "Rate > 15%?", "type": "main", "index": 0}]]
+    },
+    "Rate > 15%?": {
+      "main": [[{"node": "Alert Revenue Cycle", "type": "main", "index": 0}]]
+    }
+  }
+}

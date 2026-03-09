@@ -1,0 +1,72 @@
+{
+  "name": "PA Status Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "minutes", "minutesInterval": 15}]
+        }
+      },
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://api:8000/api/v1/prior-auth/pending",
+        "method": "GET"
+      },
+      "name": "Get Pending PAs",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://api:8000/api/v1/prior-auth/check-status/{{ $json.tracking_id }}",
+        "method": "GET"
+      },
+      "name": "Check Payer Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equals",
+              "value2": "denied"
+            }
+          ]
+        }
+      },
+      "name": "Denied?",
+      "type": "n8n-nodes-base.if",
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#pa-alerts",
+        "text": "PA Denied: {{ $json.pa_id }}\nPatient: {{ $json.patient_name }}\nService: CPT {{ $json.cpt_code }}\nReason: {{ $json.denial_reason }}\n\nAppeal recommended — auto-generating appeal letter."
+      },
+      "name": "Slack Denial Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [1250, 200]
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [[{"node": "Get Pending PAs", "type": "main", "index": 0}]]
+    },
+    "Get Pending PAs": {
+      "main": [[{"node": "Check Payer Status", "type": "main", "index": 0}]]
+    },
+    "Check Payer Status": {
+      "main": [[{"node": "Denied?", "type": "main", "index": 0}]]
+    },
+    "Denied?": {
+      "main": [[{"node": "Slack Denial Alert", "type": "main", "index": 0}]]
+    }
+  }
+}

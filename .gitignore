@@ -1,0 +1,44 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Models (large files)
+models/
+*.bin
+*.onnx
+
+# PHI — NEVER commit patient data
+data/phi/
+exports/
+*.csv
+*.xlsx
+
+# Logs
+logs/
+*.log
