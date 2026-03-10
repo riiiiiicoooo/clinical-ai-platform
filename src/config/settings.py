@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Database (Supabase PostgreSQL — HIPAA compliant, encrypted at rest)
-    database_url: str = "postgresql://user:pass@localhost:5432/clinical_ai"
+    database_url: str = "postgresql://localhost:5432/clinical_ai"
     database_pool_size: int = 20
 
     # Redis (session cache, FHIR token cache)
