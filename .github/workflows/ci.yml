@@ -107,9 +107,9 @@ jobs:
           sys.path.insert(0, '.')
           from src.compliance.rbac import RBACEngine, Role, Permission
           rbac = RBACEngine()
-          assert rbac.check_permission(Role.ADMIN, Permission.MANAGE_USERS), 'Admin should manage users'
-          assert rbac.check_permission(Role.CLINICIAN, Permission.READ_CLINICAL), 'Clinician should read clinical'
-          assert not rbac.check_permission(Role.ANALYST, Permission.READ_CLINICAL), 'Analyst should NOT read clinical'
+          assert rbac.check_permission(Role.ADMIN, Permission.MANAGE_USERS).allowed, 'Admin should manage users'
+          assert rbac.check_permission(Role.CLINICIAN, Permission.READ_CLINICAL).allowed, 'Clinician should read clinical'
+          assert not rbac.check_permission(Role.ANALYST, Permission.READ_CLINICAL).allowed, 'Analyst should NOT read clinical'
           print('All RBAC configuration tests passed')
           "
 
