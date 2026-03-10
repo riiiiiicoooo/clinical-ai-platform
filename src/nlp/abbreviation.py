@@ -61,7 +61,6 @@ CLINICAL_ABBREVIATIONS = {
     "HPI": "history of present illness",
     "CC": "chief complaint",
     "ROS": "review of systems",
-    "PE": "physical examination",
     "A&P": "assessment and plan",
     "RTC": "return to clinic",
     "F/U": "follow up",

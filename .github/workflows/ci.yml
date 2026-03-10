@@ -105,11 +105,11 @@ jobs:
           python -c "
           import sys
           sys.path.insert(0, '.')
-          from src.compliance.rbac import RBACEngine
+          from src.compliance.rbac import RBACEngine, Role, Permission
           rbac = RBACEngine()
-          assert rbac.check_permission('admin', 'manage_users'), 'Admin should manage users'
-          assert rbac.check_permission('clinician', 'view_phi'), 'Clinician should view PHI'
-          assert not rbac.check_permission('analyst', 'view_phi'), 'Analyst should NOT view PHI'
+          assert rbac.check_permission(Role.ADMIN, Permission.MANAGE_USERS), 'Admin should manage users'
+          assert rbac.check_permission(Role.CLINICIAN, Permission.READ_CLINICAL), 'Clinician should read clinical'
+          assert not rbac.check_permission(Role.ANALYST, Permission.READ_CLINICAL), 'Analyst should NOT read clinical'
           print('All RBAC configuration tests passed')
           "
 
@@ -119,8 +119,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
+        continue-on-error: true
         run: |
-          docker build -t clinical-ai-platform . || echo "Docker build skipped — dependency resolution in progress"
+          docker build -t clinical-ai-platform .
 
       - name: Validate Docker Compose
         run: |

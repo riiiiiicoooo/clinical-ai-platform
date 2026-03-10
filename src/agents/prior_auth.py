@@ -131,8 +131,8 @@ class PriorAuthAgent(BaseClinicalAgent):
         ) or "  None documented"
 
         labs_text = "\n".join(
-            f"  - {l['display']}: {l.get('value', 'N/A')} {l.get('unit', '')} ({l.get('effective_date', 'N/A')})"
-            for l in labs
+            f"  - {lab['display']}: {lab.get('value', 'N/A')} {lab.get('unit', '')} ({lab.get('effective_date', 'N/A')})"
+            for lab in labs
         ) or "  None documented"
 
         encounters_text = "\n".join(
