@@ -12,7 +12,7 @@ langsmith==0.1.0
 # Medical NLP
 scispacy==0.5.3
 medcat==1.12.0
-spacy==3.7.0
+spacy>=3.6.0,<3.7.0
 
 # Database
 asyncpg==0.29.0
