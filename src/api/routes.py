@@ -7,7 +7,7 @@ via authenticated, audit-logged API endpoints.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from src.api.models import (
     PAGenerateRequest,
     PAGenerateResponse,
@@ -92,14 +92,22 @@ async def predict_denial(request: DenialPredictionRequest, req: Request):
 
 
 @router.get("/agents/status", response_model=list[AgentStatusResponse])
-async def get_agent_status(req: Request):
-    """Get status of all clinical AI agents."""
+async def get_agent_status(
+    req: Request,
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of agents to return"),
+    offset: int = Query(0, ge=0, description="Number of agents to skip"),
+):
+    """Get status of all clinical AI agents with pagination support."""
     agents = [
         req.app.state.pa_agent,
         req.app.state.coding_agent,
         req.app.state.analytics_agent,
     ]
-    return [AgentStatusResponse(**a.get_status()) for a in agents if hasattr(a, "get_status")]
+    agent_statuses = [AgentStatusResponse(**a.get_status()) for a in agents if hasattr(a, "get_status")]
+
+    # Apply pagination
+    paginated = agent_statuses[offset : offset + limit]
+    return paginated
 
 
 @router.get("/cost/summary")

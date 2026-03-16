@@ -24,6 +24,7 @@ from src.memory.knowledge import MedicalKnowledgeStore
 from src.providers.router import ModelRouter
 from src.compliance.audit_logger import AuditLogger
 from src.fhir.client import FHIRClient
+from src.db import SessionFactory, check_postgres, check_redis, shutdown
 
 logger = logging.getLogger(__name__)
 settings = Settings()
@@ -34,13 +35,22 @@ async def lifespan(app: FastAPI):
     """Initialize and teardown application resources."""
     logger.info("Starting Clinical AI Platform...")
 
+    # Health check database connections
+    pg_ok = check_postgres()
+    redis_ok = check_redis()
+    logger.info("Database connectivity — PostgreSQL: %s, Redis: %s", pg_ok, redis_ok)
+
+    if not pg_ok:
+        logger.error("PostgreSQL connection failed — aborting startup")
+        raise RuntimeError("PostgreSQL database unavailable")
+
     # Initialize HIPAA-compliant data stores
     app.state.session_store = RedisSessionStore(settings.redis_url)
     app.state.patient_store = PatientContextStore(settings.database_url)
     app.state.knowledge_store = MedicalKnowledgeStore(settings.database_url)
 
-    # Initialize audit logger (HIPAA requirement)
-    app.state.audit_logger = AuditLogger(settings.database_url)
+    # Initialize audit logger with database session factory (HIPAA requirement)
+    app.state.audit_logger = AuditLogger(session_factory=SessionFactory)
     await app.state.audit_logger.initialize()
 
     # Initialize FHIR client for EHR integration
@@ -53,8 +63,11 @@ async def lifespan(app: FastAPI):
     # Initialize LLM model router
     app.state.model_router = ModelRouter(settings)
 
+    # Store database session factory in app state for dependency injection
+    app.state.session_factory = SessionFactory
+
     logger.info(
-        "Clinical AI Platform initialized — FHIR: %s, Audit: enabled",
+        "Clinical AI Platform initialized — FHIR: %s, Audit: PostgreSQL-persisted",
         settings.fhir_base_url,
     )
 
@@ -63,6 +76,7 @@ async def lifespan(app: FastAPI):
     # Cleanup
     await app.state.session_store.close()
     await app.state.audit_logger.flush()
+    await shutdown()
     logger.info("Clinical AI Platform shutdown complete.")
 
 

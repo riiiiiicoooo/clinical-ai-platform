@@ -1,8 +1,9 @@
 """
-Model Router — Routes requests to appropriate LLM provider.
+Model Router — Routes requests to appropriate LLM provider with Redis-backed metrics.
 
 Selects Claude Enterprise for complex clinical reasoning and
 routes based on task type, urgency, and budget.
+Maintains usage metrics in Redis for durability across restarts.
 """
 
 import logging
@@ -10,6 +11,7 @@ from typing import Optional
 
 from src.providers.anthropic import AnthropicProvider
 from src.providers.base import LLMResponse
+from src.db import get_redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +32,13 @@ class ModelRouter:
 
     All requests go through Claude Enterprise (BAA-signed) to maintain
     HIPAA compliance. Model selection based on task complexity.
+    Usage metrics persisted in Redis for durability.
     """
 
     def __init__(self, settings):
         self._anthropic = AnthropicProvider(api_key=settings.anthropic_api_key)
-        self._total_cost = 0.0
-        self._request_count = 0
+        self._redis_client = get_redis_client()
+        self._redis_prefix = "model_router"
 
     async def generate(
         self,
@@ -63,8 +66,13 @@ class ModelRouter:
             tools=tools,
         )
 
-        self._total_cost += response.cost
-        self._request_count += 1
+        # Update metrics in Redis
+        if self._redis_client:
+            try:
+                self._redis_client.incrbyfloat(f"{self._redis_prefix}:total_cost", response.cost)
+                self._redis_client.incr(f"{self._redis_prefix}:request_count")
+            except Exception as e:
+                logger.warning("Failed to update Redis metrics: %s", str(e))
 
         return {
             "content": response.content,
@@ -78,8 +86,22 @@ class ModelRouter:
         }
 
     def get_cost_summary(self) -> dict:
+        """Get LLM cost summary from Redis."""
+        total_cost = 0.0
+        request_count = 0
+
+        if self._redis_client:
+            try:
+                cost_val = self._redis_client.get(f"{self._redis_prefix}:total_cost")
+                total_cost = float(cost_val) if cost_val else 0.0
+
+                count_val = self._redis_client.get(f"{self._redis_prefix}:request_count")
+                request_count = int(count_val) if count_val else 0
+            except Exception as e:
+                logger.warning("Failed to read Redis metrics: %s", str(e))
+
         return {
-            "total_cost": round(self._total_cost, 4),
-            "request_count": self._request_count,
-            "avg_cost_per_request": round(self._total_cost / max(self._request_count, 1), 4),
+            "total_cost": round(total_cost, 4),
+            "request_count": request_count,
+            "avg_cost_per_request": round(total_cost / max(request_count, 1), 4),
         }
